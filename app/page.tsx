@@ -1,69 +1,71 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
+import NavBar from '@/components/layout/NavBar';
+import ChapterIndicator from '@/components/layout/ChapterIndicator';
+
+// Load the 3D canvas client-side only (no SSR — WebGL requires browser)
+const BackwaterCanvas = dynamic(
+  () => import('@/components/3d/BackwaterCanvas'),
+  {
+    ssr: false,
+    loading: () => (
+      // Static Kerala fallback shown while 3D loads
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'linear-gradient(180deg, #0A1A25 0%, #1A3A4A 50%, #0D2B1A 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 0,
+        }}
+      >
+        <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-display)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🛶</div>
+          <div style={{ fontSize: '0.9rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Setting sail on Kerala backwaters...
+          </div>
+        </div>
+      </div>
+    ),
+  }
+);
+
+export default function HomePage() {
+  const [scrollOffset, setScrollOffset] = useState(0);
+
+  // Track scroll for chapter indicator
+  useEffect(() => {
+    const onScroll = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollOffset(maxScroll > 0 ? window.scrollY / maxScroll : 0);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <>
+      {/* Fixed 3D canvas — lives beneath everything */}
+      <BackwaterCanvas />
+
+      {/* Sticky navbar — above canvas */}
+      <div style={{ position: 'relative', zIndex: 'var(--z-nav)' as string }}>
+        <NavBar cartCount={0} />
+      </div>
+
+      {/* Chapter indicator dots — fixed left side */}
+      <ChapterIndicator scrollOffset={scrollOffset} />
+
+      {/*
+        The scroll height is set by the Canvas ScrollControls internally.
+        We add a transparent spacer so the page is the right height
+        for the chapter indicator's window.scrollY tracking.
+        The actual HTML panels are rendered inside the Canvas ScrollControls Scroll html layer.
+      */}
+    </>
   );
 }
